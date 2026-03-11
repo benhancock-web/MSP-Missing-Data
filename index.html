@@ -211,7 +211,7 @@
     <div id="filter-header" onclick="toggleFilter()">
       <div id="filter-header-left">
         <span id="filter-toggle-arrow">▼</span>
-        Available Boards
+        Boards
         <span id="filter-badge">0</span>
       </div>
       <div id="filter-header-right">
@@ -561,8 +561,8 @@
     const total = boardsCache.length;
     const checked = boardsCache.filter(b => document.getElementById(`cb-${b.id}`)?.checked).length;
     const badge = document.getElementById('filter-badge');
-    badge.textContent = total;
-    badge.className = checked < total ? 'filtered' : '';
+    badge.textContent = checked === total ? `${total}` : `${checked} / ${total}`;
+    badge.classList.toggle('filtered', checked !== total);
   }
 
   function renderFilterPanel(boards) {
