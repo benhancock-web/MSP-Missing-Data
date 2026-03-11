@@ -577,7 +577,7 @@
         <label for="cb-${b.id}" title="${escHtml(b.name)}">${escHtml(b.name)}</label>
       </div>`;
     }).join('');
-    document.getElementById('filter-panel').style.display = '';
+    document.getElementById('filter-panel').style.display = 'block';
     updateFilterBadge();
     document.getElementById('board-count-footer').textContent = `${boards.length} boards loaded`;
   }
