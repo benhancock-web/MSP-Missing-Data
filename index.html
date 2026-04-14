@@ -82,11 +82,23 @@
     /* ── Section cards ── */
     .section-card { background: #fff; border-radius: 10px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); margin-bottom: 20px; }
     .section-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; }
-    .section-header h3 { font-size: 15px; font-weight: 700; color: #222; }
+    .section-header h3 { font-size: 15px; font-weight: 700; color: #222; display: flex; align-items: center; gap: 2px; }
     .section-subtitle { font-size: 12px; color: #999; font-weight: 400; margin-top: 2px; }
     .header-btns { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
     .config-btn { background: none; border: 1px solid #d0d8e4; color: #888; padding: 5px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: all 0.15s; white-space: nowrap; }
     .config-btn:hover { background: #f0f4fa; border-color: #0C3C60; color: #0C3C60; }
+
+    /* ── Top-level collapsible section ── */
+    .collapsible-section .section-header { cursor: pointer; margin-bottom: 0; user-select: none; }
+    .collapsible-section.open .section-header { margin-bottom: 16px; }
+    .collapsible-section .section-body { display: none; }
+    .collapsible-section.open .section-body { display: block; }
+    .section-arrow { font-size: 11px; color: #777; transition: transform 0.2s; display: inline-block; margin-right: 8px; width: 12px; }
+    .collapsible-section.open .section-arrow { transform: rotate(90deg); }
+    .section-count-badge { background: #0C3C60; color: #fff; font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 12px; margin-left: 10px; }
+    .section-count-badge.empty { background: #e0e4ea; color: #888; }
+    .collapsible-section .header-btns { visibility: hidden; }
+    .collapsible-section.open .header-btns { visibility: visible; }
 
     /* ── SP Status pills ── */
     .sp-pill { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; background: #eef0f3; color: #555; white-space: nowrap; }
@@ -205,6 +217,11 @@
 
       /* Force all accordion bodies open */
       .l1-body, .l2-body, .l3-body { display: block !important; }
+      .collapsible-section .section-body { display: block !important; }
+      .collapsible-section .header-btns { display: none !important; }
+      .section-arrow { display: none !important; }
+      .section-count-badge { background: #0C3C60 !important; color: #fff !important; font-size: 8pt !important; padding: 1px 6px !important; }
+      .section-count-badge.empty { background: #e0e4ea !important; color: #888 !important; }
 
       /* Hide all accordion arrows */
       .l1-arrow, .l2-arrow, .l3-arrow { display: none !important; }
@@ -465,18 +482,36 @@
     </select>
   </div>
 
-  <!-- Exchange / Completion Date Missing -->
-  <div class="section-card" style="border-left: 3px solid #fdab3d;">
-    <div class="section-header">
+  <!-- Unassigned Properties -->
+  <div class="section-card collapsible-section" id="unassigned-section" style="border-left: 3px solid #e2445c;">
+    <div class="section-header" onclick="toggleSection('unassigned-section')">
       <div>
-        <h3>Exchange/Completion Date Missing</h3>
+        <h3><span class="section-arrow">▶</span>Unassigned Properties<span class="section-count-badge empty" id="unassigned-count">0</span></h3>
+        <div class="section-subtitle">Live &amp; Exchanged properties with no Sales Progressor assigned · Board → Property. Always shown in full — not affected by the Progressor filter.</div>
+      </div>
+      <div class="header-btns">
+        <button class="config-btn" id="unassigned-expand-btn" onclick="event.stopPropagation(); toggleAllUnassigned()">Expand all</button>
+      </div>
+    </div>
+    <div class="section-body">
+      <div id="unassigned-container"><div style="color:#aaa;font-size:13px;padding:8px 0">Loading…</div></div>
+    </div>
+  </div>
+
+  <!-- Exchange / Completion Date Missing -->
+  <div class="section-card collapsible-section" id="missing-section" style="border-left: 3px solid #fdab3d;">
+    <div class="section-header" onclick="toggleSection('missing-section')">
+      <div>
+        <h3><span class="section-arrow">▶</span>Exchange/Completion Date Missing<span class="section-count-badge empty" id="missing-count">0</span></h3>
         <div class="section-subtitle">Properties with SP Status 'Exchanged' or 'Completed' where one or both key dates are not recorded · Sales Progressor → Workspace → Board → Property</div>
       </div>
       <div class="header-btns">
-        <button class="config-btn" id="missing-expand-btn" onclick="toggleAll('missing-container','missing-expand-btn',true)">Expand all</button>
+        <button class="config-btn" id="missing-expand-btn" onclick="event.stopPropagation(); toggleAll('missing-container','missing-expand-btn',true)">Expand all</button>
       </div>
     </div>
-    <div id="missing-container"><div style="color:#aaa;font-size:13px;padding:8px 0">Loading…</div></div>
+    <div class="section-body">
+      <div id="missing-container"><div style="color:#aaa;font-size:13px;padding:8px 0">Loading…</div></div>
+    </div>
   </div>
 </main>
 
@@ -729,6 +764,7 @@
   // ── Render functions ──────────────────────────────────────────────────────────
   function renderMissingData(allItems) {
     const container = document.getElementById('missing-container');
+    const countBadge = document.getElementById('missing-count');
     const seen = new Set();
     const items = [];
     for (const entry of allItems) {
@@ -743,6 +779,76 @@
       }
     }
     container.innerHTML = buildThreeLevelHtml(items, 'miss');
+    if (countBadge) {
+      countBadge.textContent = items.length;
+      countBadge.classList.toggle('empty', items.length === 0);
+    }
+  }
+
+  // ── Unassigned: identify which SP statuses qualify (Live + Exchanged only) ───
+  // Anything that's a fallthrough/cancelled/withdrawn or already completed is
+  // excluded — the point of this list is to flag properties that SHOULD have
+  // an owner right now.
+  function isUnassignedEligible(spStatus) {
+    const s = (spStatus || '').toLowerCase();
+    if (s.includes('complet'))  return false;
+    if (s.includes('fall'))     return false;   // Fallthrough, Fall Through, Fall-through
+    if (s.includes('cancel'))   return false;   // Cancelled / Canceled
+    if (s.includes('withdraw')) return false;   // Withdrawn
+    return true;
+  }
+
+  // ── Unassigned HTML builder — grouped by Board only ──────────────────────────
+  function buildUnassignedHtml(items) {
+    if (!items.length) return '<div style="color:#00c875;font-size:13px;padding:8px 0">✓ No unassigned properties.</div>';
+
+    const byBoard = {};
+    for (const p of items) {
+      if (!byBoard[p.boardId]) byBoard[p.boardId] = { boardName: p.boardName, boardId: p.boardId, items: [] };
+      byBoard[p.boardId].items.push(p);
+    }
+
+    const sorted = Object.values(byBoard).sort((a, b) => a.boardName.localeCompare(b.boardName));
+
+    return sorted.map((board, bi) => {
+      const id = `unassigned-l1-${bi}`;
+      const boardUrl = `https://${MONDAY_ACCOUNT}.monday.com/boards/${board.boardId}`;
+      return `<div class="l1-group" id="${id}">
+        <div class="l1-header" onclick="toggleEl('${id}')">
+          <div class="l1-header-left">
+            <span class="l1-arrow">▶</span>
+            <span class="l1-title"><a class="board-link" href="${boardUrl}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${escHtml(board.boardName)}</a></span>
+            <span class="l1-count">${board.items.length}</span>
+          </div>
+        </div>
+        <div class="l1-body">${buildLeanTable(board.items)}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── Render Unassigned section ─────────────────────────────────────────────────
+  // Always uses the full board-checked set (does NOT honour the Sales Progressor
+  // filter) — unassigned properties by definition have no progressor, so
+  // filtering them out by a named progressor would hide orphaned records.
+  function renderUnassignedData(allItems) {
+    const container = document.getElementById('unassigned-container');
+    const countBadge = document.getElementById('unassigned-count');
+    const seen = new Set();
+    const items = [];
+    for (const entry of allItems) {
+      const p = processItem(entry);
+      if (seen.has(p.id)) continue;
+      if (!isUnassignedEligible(p.spStatus)) continue;
+      // processItem defaults owner to 'Unassigned' when the People column is empty.
+      if (p.owner && p.owner !== 'Unassigned') continue;
+      seen.add(p.id);
+      items.push(p);
+    }
+    container.innerHTML = buildUnassignedHtml(items);
+    if (countBadge) {
+      countBadge.textContent = items.length;
+      countBadge.classList.toggle('empty', items.length === 0);
+    }
   }
 
   // ── Owner dropdown ────────────────────────────────────────────────────────────
@@ -782,10 +888,16 @@
       return (p.owner || '') === owner;
     }) : all;
     renderMissingData(filtered);
+    // Unassigned section is always rendered against the full (unfiltered) set —
+    // see comment on renderUnassignedData.
+    renderUnassignedData(all);
   }
 
   // ── UI helpers ────────────────────────────────────────────────────────────────
   function toggleEl(id) { document.getElementById(id)?.classList.toggle('open'); }
+
+  // Toggle a top-level collapsible section card (Unassigned / Missing Dates).
+  function toggleSection(id) { document.getElementById(id)?.classList.toggle('open'); }
 
   function toggleAll(containerId, btnId, expandFirst) {
     const container = document.getElementById(containerId);
@@ -794,6 +906,20 @@
     const shouldExpand = expandState[containerId] === undefined ? expandFirst : !expandState[containerId];
     expandState[containerId] = shouldExpand;
     container.querySelectorAll('.l1-group, .l2-group, .l3-group').forEach(el => {
+      shouldExpand ? el.classList.add('open') : el.classList.remove('open');
+    });
+    btn.textContent = shouldExpand ? 'Collapse all' : 'Expand all';
+  }
+
+  // Unassigned section has only one accordion level (Board) — separate
+  // helper because the shared toggleAll walks l1/l2/l3 indiscriminately.
+  function toggleAllUnassigned() {
+    const container = document.getElementById('unassigned-container');
+    const btn = document.getElementById('unassigned-expand-btn');
+    if (!container || !btn) return;
+    const shouldExpand = expandState['unassigned-container'] === undefined ? true : !expandState['unassigned-container'];
+    expandState['unassigned-container'] = shouldExpand;
+    container.querySelectorAll('.l1-group').forEach(el => {
       shouldExpand ? el.classList.add('open') : el.classList.remove('open');
     });
     btn.textContent = shouldExpand ? 'Collapse all' : 'Expand all';
