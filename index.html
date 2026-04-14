@@ -610,7 +610,7 @@
     let owner = 'Unassigned', spStatus = item.group?.title || '—', exchangeDate = '', completionDate = '';
     for (const cv of item.column_values) {
       const t = colMap[cv.id] || '', text = (cv.text || '').trim();
-      if (t === 'owner')                { if (text) owner = text.split(',')[0].trim(); }
+      if (t === 'owner')                { if (text) { const _ow = text.split(',').map(s => s.trim()).filter(Boolean); if (_ow.length) owner = _ow[_ow.length - 1]; } }  /* Last owner wins — see DECISION-LOG 14 Apr 2026 */
       else if (t === 'sp status')       { if (text) spStatus = text; }
       else if (t === 'exchange date')   { exchangeDate = text; }
       else if (t === 'completion date') { completionDate = text; }
